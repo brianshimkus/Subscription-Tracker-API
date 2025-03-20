@@ -51,6 +51,40 @@ export const signUp = async (req, res, next) => {
 	}
 }
 
-export const signIn = async (req, res, next) => {}
+export const signIn = async (req, res, next) => {
+	try {
+		const { email, password } = req.body
+
+		// Check if user exists
+		const user = await User.findOne({ email })
+
+		if (!user) {
+			const error = new Error('Invalid credentials')
+			error.statusCode = 401
+			throw error
+		}
+
+		// Check if password is correct
+		const isPasswordValid = await bcrypt.compare(password, user.password)
+
+		if (!isPasswordValid) {
+			const error = new Error('Invalid credentials')
+			error.statusCode = 401
+			throw error
+		}
+
+		const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+			expiresIn: JWT_EXPIRES_IN,
+		})
+
+		res.status(200).json({
+			success: true,
+			message: 'User signed in',
+			data: { token, user },
+		})
+	} catch (error) {
+		next(error)
+	}
+}
 
 export const signOut = async (req, res, next) => {}
